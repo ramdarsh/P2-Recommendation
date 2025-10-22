@@ -32,7 +32,7 @@ if not os.path.exists(output):
         gdown.download(url, output, quiet=False)
 
 # --- Step 3: Load similarity.pkl ---
-similarity = pickle.load(open('smovie_similarity_matrix.pkl', 'rb'))
+similarity = pickle.load(open('movie_similarity_matrix.pkl', 'rb'))
 
 movies_list = movies['Movie Title'].values
 
@@ -70,4 +70,5 @@ if st.button("🎥 Show Recommendations"):
         poster = fetch_poster(name)
         col.image(poster, use_container_width=True)
         col.caption(name)
+
 
