@@ -1,6 +1,8 @@
 import streamlit as st
 import pickle
 import requests
+import gdown
+import os
 
 
 st.image('https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/IMDB_Logo_2016.svg/575px-IMDB_Logo_2016.svg.png')
@@ -18,13 +20,34 @@ background_image = """
 
 st.markdown(background_image, unsafe_allow_html=True)
 
+# --- Google Drive Download Function ---
+def download_from_drive(file_id, output_name):
+"""Download a file from Google Drive using gdown."""
+    url = f"https://drive.google.com/uc?id={file_id}"
+    if not os.path.exists(output_name):
+        st.info(f"📥 Downloading {output_name} (first time only)...")
+        gdown.download(url, output_name, quiet=False)
+    return output_name
+
+# --- Replace this with your actual Google Drive file ID ---
+SIMILARITY_FILE_ID = "1fFPAxTWd1z0LLgEWstuCUuvw07myClqc"
+
+
 movies = pickle.load(open("movies_list.pkl",'rb'))
-similarity = pickle.load(open("similarity.pkl",'rb'))
+# download similarity.pkl from Drive if not present
+similarity_path = download_from_drive(SIMILARITY_FILE_ID, "similarity.pkl")
+
+with open(similarity_path, "rb") as f:
+    similarity = pickle.load(f)
 
 movies_list = movies['Movie Title'].values
 
 st.header("MOVIE RECOMMENDER SYSTEM")
 selectvalue=st.selectbox('Select movie from dropdown', movies_list)
+
+# --- Streamlit UI ---
+st.header("🎬 MOVIE RECOMMENDER SYSTEM")
+selectvalue = st.selectbox('Select movie from dropdown', movies_list)
 
 def fetch_poster(movie_list):
     # Make a request to the OMDb API
@@ -81,4 +104,5 @@ if st.button("Show Recommendations"):
             column.image(fetch_poster(recommendation['Movie Title']))
 
     else:
+
         st.warning("No recommendations available.")
