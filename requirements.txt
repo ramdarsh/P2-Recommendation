@@ -1,4 +1,5 @@
 streamlit==1.26.0
 requests==2.31.0
+pandas
 gdown
 pillow>=10.0.0
