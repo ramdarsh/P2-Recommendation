@@ -20,89 +20,53 @@ background_image = """
 
 st.markdown(background_image, unsafe_allow_html=True)
 
-# --- Google Drive Download Function ---
-def download_from_drive(file_id, output_name):
-"""Download a file from Google Drive using gdown."""
-    url = f"https://drive.google.com/uc?id={file_id}"
-    if not os.path.exists(output_name):
-        st.info(f"📥 Downloading {output_name} (first time only)...")
-        gdown.download(url, output_name, quiet=False)
-    return output_name
-
-# --- Replace this with your actual Google Drive file ID ---
-SIMILARITY_FILE_ID = "1fFPAxTWd1z0LLgEWstuCUuvw07myClqc"
-
-
 movies = pickle.load(open("movies_list.pkl",'rb'))
-# download similarity.pkl from Drive if not present
-similarity_path = download_from_drive(SIMILARITY_FILE_ID, "similarity.pkl")
 
-with open(similarity_path, "rb") as f:
-    similarity = pickle.load(f)
+# --- Step 2: Download similarity.pkl from Google Drive ---
+file_id = "1fFPAxTWd1z0LLgEWstuCUuvw07myClqc"  # 🔹 Replace with your actual Google Drive file ID
+url = f"https://drive.google.com/uc?id={file_id}"
+output = "similarity.pkl"
+
+if not os.path.exists(output):
+    with st.spinner('Downloading similarity model... (this may take a few minutes)'):
+        gdown.download(url, output, quiet=False)
+
+# --- Step 3: Load similarity.pkl ---
+similarity = pickle.load(open('similarity.pkl', 'rb'))
 
 movies_list = movies['Movie Title'].values
 
-st.header("MOVIE RECOMMENDER SYSTEM")
-selectvalue=st.selectbox('Select movie from dropdown', movies_list)
-
-# --- Streamlit UI ---
 st.header("🎬 MOVIE RECOMMENDER SYSTEM")
 selectvalue = st.selectbox('Select movie from dropdown', movies_list)
 
-def fetch_poster(movie_list):
-    # Make a request to the OMDb API
-    response = requests.get('https://www.omdbapi.com/?t={}&apikey=3705bfa'.format(movie_list))
-    
-    # Check if the request was successful (status code 200)
+# --- Step 5: Fetch poster from OMDb API ---
+def fetch_poster(movie_name):
+    api_key = "3705bfa"  # 🔹 Replace with your OMDb key (get from https://www.omdbapi.com/apikey.aspx)
+    url = f"http://www.omdbapi.com/?t={movie_name}&apikey={api_key}"
+    response = requests.get(url)
     if response.status_code == 200:
-        # Parse the JSON data from the response
         data = response.json()
-        
-        # Check if the 'Poster' key exists in the response
-        if 'Poster' in data:
-            return data['Poster']
-        else:
-            return "No poster available"
+        return data.get('Poster', "https://via.placeholder.com/300x450?text=No+Poster")
     else:
-        return "Error fetching data"
+        return "https://via.placeholder.com/300x450?text=Error+Loading"
 
 
+# --- Step 6: Recommendation function ---
 def recommend(movie):
     index = movies[movies['Movie Title'] == movie].index[0]
-    distance = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda vector: vector[1])
-    recommend_movies = []
+    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
+    recommended_movies = []
+    for i in distances[1:6]:
+        recommended_movies.append(movies.iloc[i[0]]['Movie Title'])
+    return recommended_movies
 
-    for i in distance[1:6]:
-        movie_entry = movies.iloc[i[0]].to_dict()
-        recommend_movies.append(movie_entry)
+# --- Step 7: Display recommendations ---
+if st.button("🎥 Show Recommendations"):
+    recommendations = recommend(selectvalue)
+    st.subheader("Recommended Movies:")
 
-    return recommend_movies
-
-if st.button("Show Recommendations"):
-    recommend_result = recommend(selectvalue)
-    
-    # Check if there are recommendations
-    if recommend_result:
-        # Unpack the first recommendation
-        first_recommendation = recommend_result[0]
-        first_movie_name = first_recommendation['Movie Title']
-        first_poster = fetch_poster(first_movie_name)
-
-        # Display the first recommendation
-        st.header(first_movie_name)
-        st.image(first_poster)
-
-        # Display additional recommendations if available
-        st.subheader("Additional Recommendations:")
-        
-        # Create a horizontal layout for posters and movie titles
-        columns = st.columns(5)
-
-        # Display posters and movie titles horizontally
-        for recommendation, column in zip(recommend_result[1:6], columns):
-            column.text(recommendation['Movie Title'])
-            column.image(fetch_poster(recommendation['Movie Title']))
-
-    else:
-
-        st.warning("No recommendations available.")
+    cols = st.columns(5)
+    for col, name in zip(cols, recommendations):
+        poster = fetch_poster(name)
+        col.image(poster, use_container_width=True)
+        col.caption(name)
