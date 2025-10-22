@@ -23,16 +23,16 @@ st.markdown(background_image, unsafe_allow_html=True)
 movies = pickle.load(open("movies_list.pkl",'rb'))
 
 # --- Step 2: Download similarity.pkl from Google Drive ---
-file_id = "1fFPAxTWd1z0LLgEWstuCUuvw07myClqc"  # 🔹 Replace with your actual Google Drive file ID
+file_id = "1ePtoMq-FnbW27Z3YEVktlZoM3Vg3W43w"  # 🔹 Replace with your actual Google Drive file ID
 url = f"https://drive.google.com/uc?id={file_id}"
-output = "similarity.pkl"
+output = "movie_similarity_matrix.pkl"
 
 if not os.path.exists(output):
     with st.spinner('Downloading similarity model... (this may take a few minutes)'):
         gdown.download(url, output, quiet=False)
 
 # --- Step 3: Load similarity.pkl ---
-similarity = pickle.load(open('similarity.pkl', 'rb'))
+similarity = pickle.load(open('smovie_similarity_matrix.pkl', 'rb'))
 
 movies_list = movies['Movie Title'].values
 
@@ -70,3 +70,4 @@ if st.button("🎥 Show Recommendations"):
         poster = fetch_poster(name)
         col.image(poster, use_container_width=True)
         col.caption(name)
+
